@@ -1,0 +1,59 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+.vite/
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data artifacts
+data/raw/*
+data/external/*
+data/processed/*
+!data/raw/.gitkeep
+!data/external/.gitkeep
+!data/processed/.gitkeep
+!data/README.md
+
+# Model artifacts
+models/registry/*
+!models/registry/.gitkeep
+!models/README.md
+
+# Generated reports
+reports/figures/*
+!reports/figures/.gitkeep
+!reports/README.md
+
