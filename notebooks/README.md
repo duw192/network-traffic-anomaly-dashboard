@@ -1,6 +1,7 @@
 # Notebooks
 
-Exploratory analysis notebooks will live here.
+Exploratory analysis and model-research workspace.
 
-Keep notebooks focused on research, dataset inspection, and model experiments.
+- `01_data_exploration.ipynb`: inspects the CICIDS2017 sample, label distribution, missing values, duplicates, numeric ranges, and Day 05 feature candidates.
 
+Keep notebooks focused on research and inspection. Any transformation used by training or inference must be implemented in importable modules and covered by automated tests.

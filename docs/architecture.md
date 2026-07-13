@@ -6,7 +6,7 @@ This document describes the planned architecture for the Network Traffic Anomaly
 
 The project analyzes flow-based network traffic records, detects abnormal behavior with a baseline machine learning model, exposes the results through backend APIs, and presents traffic/security insights in a React dashboard.
 
-The current repository is in the project-structure stage. This architecture defines the target MVP and the boundaries that future implementation should follow.
+The repository includes the validated CICIDS2017 data foundation and executable ingestion/preprocessing pipeline. This architecture defines how that foundation connects to the ML, backend, database, frontend, and deployment boundaries of the complete MVP.
 
 ## 2. Architecture Goals
 
