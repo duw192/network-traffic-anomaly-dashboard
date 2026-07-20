@@ -27,9 +27,9 @@ The MVP is batch-oriented. It analyzes flow metadata rather than packet payloads
 | Feature engineering | Packet, byte, rate, port-category, service flags, one-hot encoding | Available |
 | Scaling | Deterministic `log1p` + robust median/IQR scaling with exported parameters | Available |
 | Quality assurance | Unit tests, metadata contract, full-output checks for missing/Infinity/duplicates | Available |
-| Machine learning | Baseline training, evaluation, saved model, metrics, confusion matrix | Next delivery |
-| Backend | Health, traffic, alert, metric, and prediction APIs | Architecture defined |
-| Database | Traffic logs, alerts, and model-run persistence | Architecture defined |
+| Machine learning | Baseline training, evaluation, saved model, metrics, confusion matrix | Available |
+| Backend | Health, traffic, alert, metric, and prediction APIs | Available |
+| Database | SQLite traffic logs, alerts, model-run persistence, seed data | Available |
 | Frontend | Dashboard, traffic logs, alerts, and model-metric views | Architecture defined |
 | Deployment | Backend/frontend containers and Docker Compose integration | Architecture defined |
 
@@ -150,7 +150,7 @@ See [docs/features.md](docs/features.md) for the complete feature and target con
 - Git
 - CICIDS2017 MachineLearningCSV files for regenerating the local sample
 
-Backend, frontend, database, and Docker prerequisites will be added alongside their executable modules.
+Backend prerequisites are listed in `backend/requirements.txt`. Frontend, PostgreSQL, and Docker prerequisites will be added alongside their executable modules.
 
 ## Quick Start
 
@@ -168,6 +168,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r pipelines/requirements.txt
+python -m pip install -r backend/requirements.txt
 ```
 
 On Linux/macOS, activate with `source .venv/bin/activate`.
@@ -212,6 +213,23 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Expected result: all three pipeline tests pass.
 
+### 7. Train the ML baseline
+
+```powershell
+python ml/train.py
+```
+
+This trains a supervised `RandomForestClassifier` from the processed `binary_label` target, saves the model bundle, writes metrics, and exports the confusion matrix.
+
+### 8. Seed and run the backend API
+
+```powershell
+python scripts/seed_db.py --limit 500
+python -m uvicorn backend.app.main:app --reload
+```
+
+API docs are available at `http://localhost:8000/docs`.
+
 ## Pipeline CLI
 
 ### Ingestion
@@ -236,6 +254,34 @@ python pipelines/preprocess.py
 
 `--max-rows` is useful for smoke tests. `--keep-duplicates` disables exact raw-row removal and should only be used for deliberate diagnostics; model-feature duplicate removal remains part of the safety contract.
 
+## ML Baseline CLI
+
+### Training
+
+```text
+python ml/train.py
+  [--data PATH]
+  [--metadata PATH]
+  [--model-output PATH]
+  [--metrics-output PATH]
+  [--confusion-matrix-output PATH]
+  [--target-column COLUMN]
+  [--test-size FLOAT]
+  [--random-state INT]
+```
+
+### Evaluation
+
+```text
+python ml/evaluate.py
+  [--model PATH]
+  [--data PATH]
+  [--metrics-output PATH]
+  [--confusion-matrix-output PATH]
+```
+
+The default Day 07 run uses a stratified 80/20 split, `random_state=42`, and the 14 model feature columns exported in `data/processed/preprocessing_metadata.json`.
+
 ## Generated Artifacts
 
 | Artifact | Purpose | Git policy |
@@ -244,6 +290,10 @@ python pipelines/preprocess.py
 | `data/processed/traffic_ingested.csv` | Header-normalized staging data | Ignored |
 | `data/processed/traffic_processed.csv` | Dashboard context plus model-ready features | Ignored |
 | `data/processed/preprocessing_metadata.json` | Cleaning statistics, label mapping, feature list, medians, scaling parameters | Ignored |
+| `models/baseline_model.pkl` | Local baseline `joblib` bundle with model and reproducibility metadata | Generated artifact |
+| `reports/model_metrics.json` | Baseline classification metrics and evaluation metadata | Generated artifact |
+| `reports/confusion_matrix.png` | Baseline confusion-matrix image | Generated artifact |
+| `backend/dev.db` | Local SQLite API demo database | Ignored |
 | `models/registry/*` | Trained model and version metadata | Ignored by default |
 | `reports/figures/*` | Generated model/analysis figures | Ignored by default |
 
@@ -263,8 +313,12 @@ Documented variables:
 |---|---|
 | `APP_ENV` | Runtime environment name |
 | `API_BASE_URL` | Backend URL consumed by local clients/frontend |
-| `DATABASE_URL` | SQLAlchemy-compatible database connection |
+| `DATABASE_URL` | Local SQLite URL for the current MVP; PostgreSQL target for Docker phase |
 | `MODEL_REGISTRY_DIR` | Directory containing approved model artifacts |
+| `MODEL_PATH` | Baseline model artifact loaded by the prediction API |
+| `PREPROCESSING_METADATA_PATH` | Day 05 feature-scaling metadata used by prediction |
+| `MODEL_METRICS_PATH` | Day 07 metrics JSON read by `/api/metrics` |
+| `CORS_ORIGINS` | Comma-separated frontend origins allowed by FastAPI |
 
 Never commit `.env` files or credentials.
 
@@ -280,11 +334,11 @@ The pipeline test suite verifies:
 - Finite numeric outputs.
 - CSV and metadata JSON creation.
 
-Before using a processed artifact for training, verify that it contains no missing cells, no Infinity values, no duplicate model-feature/target rows, and that `record_id` is sequential. The Day 05 verification record is available in [docs/day-05-control.md](docs/day-05-control.md).
+Before using a processed artifact for training, verify that it contains no missing cells, no Infinity values, no duplicate model-feature/target rows, and that `record_id` is sequential. The Day 05 verification record is available in [docs/day-05-control.md](docs/day-05-control.md), the Day 07 ML baseline record is available in [docs/day-07-control.md](docs/day-07-control.md), the Day 09 backend record is available in [docs/day-09-control.md](docs/day-09-control.md), and the Day 11 database record is available in [docs/day-11-control.md](docs/day-11-control.md).
 
 ## API and Dashboard Contract
 
-The architecture reserves these backend endpoints:
+The backend implements these endpoints:
 
 | Method | Endpoint | Responsibility |
 |---|---|---|
@@ -300,9 +354,9 @@ The frontend boundary contains planned pages for Dashboard, Traffic Logs, Alerts
 ## Delivery Roadmap
 
 1. **Data foundation:** dataset selection, sampling, exploration, ingestion, cleaning, features, scaling, metadata, tests — completed.
-2. **ML baseline:** training, evaluation, model artifact, metrics JSON, confusion matrix.
-3. **Backend API:** FastAPI structure, schemas, services, prediction integration, health/readiness.
-4. **Persistence:** traffic logs, alerts, model runs, migrations, seed data.
+2. **ML baseline:** training, evaluation, model artifact, metrics JSON, confusion matrix — completed.
+3. **Backend API:** FastAPI structure, schemas, services, prediction integration, health/readiness — completed.
+4. **Persistence:** traffic logs, alerts, model runs, local SQLite seed data — completed.
 5. **Frontend:** dashboard pages, reusable charts, loading/error/empty states.
 6. **Integration:** typed API client, CORS, real backend data, end-to-end tests.
 7. **Deployment:** Dockerfiles, Docker Compose, configuration, runbook.
@@ -319,6 +373,10 @@ The frontend boundary contains planned pages for Dashboard, Traffic Logs, Alerts
 | [docs/day-03-dataset-guide.md](docs/day-03-dataset-guide.md) | Reproducible dataset preparation guide |
 | [docs/features.md](docs/features.md) | Cleaning, feature engineering, encoding, scaling, and model contract |
 | [docs/day-05-control.md](docs/day-05-control.md) | Day 05 implementation and verification record |
+| [docs/day-07-control.md](docs/day-07-control.md) | Day 07 ML baseline implementation and verification record |
+| [docs/day-09-control.md](docs/day-09-control.md) | Day 09 FastAPI backend implementation and verification record |
+| [docs/day-11-control.md](docs/day-11-control.md) | Day 11 database and mock-data implementation and verification record |
+| [docs/database.md](docs/database.md) | Traffic log, alert, and model-run database schema |
 | [notebooks/01_data_exploration.ipynb](notebooks/01_data_exploration.ipynb) | Exploratory dataset analysis |
 
 ## Development Rules
