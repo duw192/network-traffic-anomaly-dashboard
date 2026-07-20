@@ -7,6 +7,9 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*.db
+*.sqlite
+*.sqlite3
 .python-version
 .pytest_cache/
 .ruff_cache/
@@ -48,6 +51,7 @@ data/processed/*
 !data/README.md
 
 # Model artifacts
+models/baseline_model.pkl
 models/registry/*
 !models/registry/.gitkeep
 !models/README.md
@@ -56,4 +60,3 @@ models/registry/*
 reports/figures/*
 !reports/figures/.gitkeep
 !reports/README.md
-

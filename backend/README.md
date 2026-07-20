@@ -2,15 +2,35 @@
 
 FastAPI backend for network traffic APIs, anomaly detection workflows, and dashboard data access.
 
-Planned stack:
+Implemented local MVP stack:
 
 - FastAPI.
-- SQLAlchemy.
-- PostgreSQL.
 - Pydantic.
-- Alembic.
+- SQLite.
+- `joblib` baseline model loading.
 
-No backend implementation has been added yet.
+PostgreSQL, SQLAlchemy, and Alembic remain planned for the Docker/integration phase.
+
+## Run Locally
+
+```powershell
+python -m pip install -r backend/requirements.txt
+python scripts/seed_db.py --limit 500
+python -m uvicorn backend.app.main:app --reload
+```
+
+API docs are available at `http://localhost:8000/docs`.
+
+## Implemented Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health` | Service, database, and model readiness |
+| `GET` | `/api/traffic` | Paginated/filterable traffic logs |
+| `GET` | `/api/traffic/{traffic_id}` | Single traffic log |
+| `GET` | `/api/alerts` | Paginated/filterable alerts |
+| `GET` | `/api/metrics` | Dashboard counts and model metrics |
+| `POST` | `/api/predict` | Run baseline prediction and persist the result |
 
 ## Structure
 
@@ -30,4 +50,3 @@ backend/
 |   `-- versions/
 `-- tests/
 ```
-
